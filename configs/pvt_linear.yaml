@@ -1,0 +1,6 @@
+# Reference: PVTv2-b2 + EMCAD + 1x1-conv head (TA baseline). Checkpoint: non_learnable/baseline_100epoch.
+base: _base_pvt.yaml
+model:
+  head: {type: linear}
+loss:
+  structure: 1.0

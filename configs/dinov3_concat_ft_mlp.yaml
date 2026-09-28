@@ -1,0 +1,5 @@
+base: _base_dinov3.yaml
+model:
+  head: {type: mlp}
+loss:
+  structure: 1.0

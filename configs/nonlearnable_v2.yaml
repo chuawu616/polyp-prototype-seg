@@ -1,0 +1,13 @@
+# ProtoSeg-style prototypes on d1 (5+5), initialised from the linear baseline and KMeans centres.
+# Reconstructed from train_prototype_2.py defaults; no checkpoint of this version survived.
+base: _base_pvt.yaml
+model:
+  head: {type: nonlearnable_v2, num_prototype: 5, kmeans_centers: assets/kmeans/d1_ch64_m5.pth}
+train:
+  multiscale: [1]
+  augmentation: true
+  init_from: checkpoints/pvt_linear.pth
+loss:
+  structure: 1.0
+  ppc: 0.01
+  ppd: 0.01

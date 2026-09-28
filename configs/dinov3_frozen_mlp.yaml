@@ -1,0 +1,7 @@
+# Frozen DINOv3 (last block only) + per-pixel MLP. arch: vits16plus | vitb16 | vitl16
+base: _base_dinov3.yaml
+model:
+  encoder: {layers: 1, freeze: true}
+  head: {type: mlp}
+loss:
+  structure: 1.0

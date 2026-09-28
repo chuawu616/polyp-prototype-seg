@@ -1,0 +1,23 @@
+# Shared by every experiment: the original EMCAD polyp training recipe.
+data:
+  train_root: data/polyp/TrainDataset
+  test_root: data/polyp/TestDataset
+  superpixel_root: null
+  val_fraction: 0.0     # >0 holds out this share of the training images to select best.pth (recommended: 0.1);
+                        # 0 selects on the test sets, as the original research code did
+train:
+  epochs: 100
+  lr: 1.0e-4            # AdamW, weight decay 1e-4, constant LR
+  weight_decay: 1.0e-4
+  batchsize: 16
+  img_size: 352
+  clip: 0.5             # gradient value clipping
+  multiscale: [0.75, 1, 1.25]
+  augmentation: false
+  save_epochs: []
+  init_from: null       # full-model checkpoint, loaded where shapes match
+  seed: 0               # Python / NumPy / PyTorch seed (null = unseeded, as in the original runs)
+  deterministic: false  # cuDNN deterministic mode (slower)
+# Each experiment config defines its own complete `loss:` section (it is not merged with a base).
+eval:
+  select_protocol: unified   # protocol used to pick best.pth (the original code used legacy_* on the test sets)

@@ -1,0 +1,7 @@
+# DINOv3 ViT-S+/16, blocks 2,4,...,12 concatenated (6 x 384 = 2304-d), fully fine-tuned, 50 epochs.
+base: _base.yaml
+model:
+  encoder: {type: dinov3, arch: vits16plus, weights: weights/dinov3_vits16plus_pretrain.pth,
+            layers: [1, 3, 5, 7, 9, 11], freeze: false}
+train:
+  epochs: 50

@@ -1,0 +1,153 @@
+diff --git a/dataloaders/augutils.py b/dataloaders/augutils.py
+index 8ea821c..92e711a 100755
+--- a/dataloaders/augutils.py
++++ b/dataloaders/augutils.py
+@@ -5,7 +5,7 @@ from os.path import join
+ 
+ import torch
+ import numpy as np
+-import torchvision.transforms as deftfx
++import torchvision.transforms as T
+ import dataloaders.image_transforms as myit
+ import copy
+ 
+@@ -43,6 +43,14 @@ augs = {
+     'aug_v3': sabs_augv3, # more aggresive
+ }
+ 
++# 確保 't' (depth flip) 在2D模式下是關閉的
++for aug_key in augs:
++    if 'flip' in augs[aug_key]:
++        augs[aug_key]['flip']['t'] = False
++        
++# 讓我們在 augs 字典中定義目標尺寸，使其可配置
++for aug_key in augs:
++    augs[aug_key]['output_size'] = (256, 256)
+ 
+ def get_geometric_transformer(aug, order=3):
+     """order: interpolation degree. Select order=0 for augmenting segmentation """
+@@ -65,7 +73,7 @@ def get_geometric_transformer(aug, order=3):
+ 
+     if 'elastic' in aug['aug']:
+         tfx.append(myit.ElasticTransform(alpha, sigma))
+-    input_transform = deftfx.Compose(tfx)
++    input_transform = T.Compose(tfx)
+     return input_transform
+ 
+ def get_intensity_transformer(aug):
+@@ -100,39 +108,86 @@ def transform_with_label(aug):
+ 
+     geometric_tfx = get_geometric_transformer(aug)
+     intensity_tfx = get_intensity_transformer(aug)
+-
+-    def transform(comp, c_label, c_img, use_onehot, nclass, **kwargs):
++    output_size = aug['aug'].get('output_size', (256, 256))
++    
++    # 創建一個 torchvision 的 transform pipeline 來處理尺寸
++    # 這裡使用 Resize + CenterCrop。您也可以換成 RandomCrop
++    # 注意：我們需要對影像和標籤執行相同的幾何變換
++    resize_crop_transform = T.Compose([
++        T.ToPILImage(), # 轉換為 PIL 影像以便使用 torchvision transforms
++        T.Resize(output_size, interpolation=T.InterpolationMode.BILINEAR),
++        # T.CenterCrop(output_size), # 如果 Resize 後尺寸不完全匹配，可以加上 CenterCrop
++        T.ToTensor() # 轉換回 Tensor
++    ])
++
++    def transform(comp, c_label, c_img, use_onehot, nclass=None, **kwargs):
+         """
+         Args
+-        comp:               a numpy array with shape [H x W x C + c_label]
+-        c_label:            number of channels for a compact label. Note that the current version only supports 1 slice (H x W x 1)
+-        nc_onehot:          -1 for not using one-hot representation of mask. otherwise, specify number of classes in the label
+-
++        comp:               a numpy array with shape [H x W x (c_img + c_label)]
++        c_label:            number of channels for a compact label.
++        c_img:              number of channels for the image.
++        use_onehot:         whether to use one-hot for labels during augmentation.
++        nclass:             number of classes if using one-hot.
+         """
+         comp = copy.deepcopy(comp)
+-        if (use_onehot is True) and (c_label != 1):
+-            raise NotImplementedError("Only allow compact label, also the label can only be 2d")
+-        assert c_img + 1 == comp.shape[-1], "only allow single slice 2D label"
+-
+-        # geometric transform
+-        _label = comp[..., c_img ]
+-        _h_label = np.float32(np.arange( nclass ) == (_label[..., None]) )
+-        comp = np.concatenate( [comp[...,  :c_img ], _h_label], -1 )
+-        comp = geometric_tfx(comp)
+-        # round one_hot labels to 0 or 1
+-        t_label_h = comp[..., c_img : ]
+-        t_label_h = np.rint(t_label_h)
+-        assert t_label_h.max() <= 1
+-        t_img = comp[..., 0 : c_img ]
+-
+-        # intensity transform
+-        t_img = intensity_tfx(t_img)
++        assert comp.shape[-1] == c_img + c_label, \
++            f"Composite image channel mismatch: expected {c_img + c_label}, but got {comp.shape[-1]}"
++
++        # --- 新增點：在所有增強之前，先統一尺寸 ---
++        # 為了對影像和標籤同時做 Resize，我們需要一些技巧
++        # 我們將 composite image 視為一個多通道影像來處理
++        # 由於 ToPILImage() 只能處理 3 通道或 1 通道，我們需要分開處理
++        
++        img_part = comp[..., :c_img]
++        label_part = comp[..., c_img:]
++
++        # 轉換為 PyTorch Tensor (C, H, W) 格式以使用 torchvision
++        img_tensor = torch.from_numpy(np.transpose(img_part, (2, 0, 1)))
++        label_tensor = torch.from_numpy(np.transpose(label_part, (2, 0, 1)))
++
++        # 應用尺寸變換
++        # 對影像使用雙線性插值
++        resized_img_tensor = T.functional.resize(img_tensor, output_size, interpolation=T.InterpolationMode.BILINEAR)
++        # 對標籤使用最近鄰插值，以保持標籤值的完整性
++        resized_label_tensor = T.functional.resize(label_tensor, output_size, interpolation=T.InterpolationMode.NEAREST)
++
++        # 轉換回 numpy (H, W, C) 格式以進行後續的自訂增強
++        resized_img_np = np.transpose(resized_img_tensor.numpy(), (1, 2, 0))
++        resized_label_np = np.transpose(resized_label_tensor.numpy(), (1, 2, 0))
++
++        # 重新組合 composite image
++        comp_resized = np.concatenate([resized_img_np, resized_label_np], axis=-1)
++        
++        # --- 原有的增強邏輯 ---
++        if use_onehot and nclass is None:
++            raise ValueError("nclass must be provided when use_onehot is True")
++
++        # 幾何變換
++        _img_part = comp_resized[..., :c_img]
++        _label_part = comp_resized[..., c_img:]
++
++        if use_onehot:
++            _label_part = _label_part.squeeze(-1)
++            _h_label = np.float32(np.arange(nclass) == (_label_part[..., None]))
++            comp_for_geom = np.concatenate([_img_part, _h_label], axis=-1)
++        else:
++            comp_for_geom = comp_resized
+ 
+-        if use_onehot is True:
+-            t_label = t_label_h
++        transformed_geom = geometric_tfx(comp_for_geom)
++
++        t_img = transformed_geom[..., :c_img]
++        
++        if use_onehot:
++            t_label_h = transformed_geom[..., c_img:]
++            t_label_h = np.rint(t_label_h)
++            assert t_label_h.max() <= 1
++            t_label = np.expand_dims(np.argmax(t_label_h, axis=-1), -1)
+         else:
+-            t_label = np.expand_dims(np.argmax(t_label_h, axis = -1), -1)
+-        return t_img, t_label
++            t_label = transformed_geom[..., c_img:]
++            t_label = np.rint(t_label)
+ 
+-    return transform
++        # 強度變換
++        t_img = intensity_tfx(t_img)
++        return t_img, t_label
+ 
++    return transform
+\ No newline at end of file

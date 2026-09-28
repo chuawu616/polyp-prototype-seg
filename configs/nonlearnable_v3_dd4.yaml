@@ -1,0 +1,16 @@
+# Dual level: prototypes on dd4 (11x11x512), MLP-projected to d1. 20 epochs.
+# legacy_scaled reproduces the original PPD on temperature-scaled logits (see docs/journey.md, bug 5);
+# set it to false for the corrected loss.
+base: _base_pvt.yaml
+model:
+  encoder: {detach_taps: false}
+  head: {type: nonlearnable_v3, num_prototype: 5, node: dd4, kmeans_centers: assets/kmeans/dd4_ch512_m5.pth}
+train:
+  epochs: 20
+  multiscale: [1]
+  init_from: checkpoints/pvt_linear.pth
+  save_epochs: [1, 2, 3, 4, 5, 10, 20]
+loss:
+  structure: 1.0
+  ppc: 1.0
+  ppd: {weight: 0.01, legacy_scaled: true}

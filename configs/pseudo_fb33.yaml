@@ -1,0 +1,10 @@
+# Prototypes as an EMA teacher: Sinkhorn pseudo-labels supervise a 6-way student; Dice on the binary output.
+base: _base_pvt.yaml
+model:
+  head: {type: pseudo, num_prototype: 3}
+train:
+  multiscale: [1]
+  save_epochs: [1, 2, 3, 4, 5, 10, 20, 50, 100]
+loss:
+  pseudo_ce: 1.0
+  dice: 1.0

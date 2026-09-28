@@ -1,0 +1,7 @@
+# + KL balancing of per-class prototype usage, weight 0.1, off until epoch 5, full at epoch 10.
+base: _base_pvt.yaml
+model:
+  head: {type: prototype, num_fg: 3, num_bg: 3}
+loss:
+  structure: 1.0
+  kl: {weight: 0.1, ramp: [5, 10]}

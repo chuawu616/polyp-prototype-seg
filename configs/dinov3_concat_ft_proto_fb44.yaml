@@ -1,0 +1,6 @@
+base: _base_dinov3.yaml
+model:
+  neck: 256
+  head: {type: prototype, num_fg: 4, num_bg: 4}
+loss:
+  structure: 1.0

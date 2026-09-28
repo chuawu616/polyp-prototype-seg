@@ -1,0 +1,8 @@
+# 5 FG prototypes (3 easy + 2 hard) + 4 BG; hard contribution warmed up over 10 epochs.
+base: _base_pvt.yaml
+model:
+  head: {type: specialize, num_fg: 5, num_hard: 2, num_bg: 4}
+train:
+  hard_warmup_epochs: 10
+loss:
+  structure: 1.0

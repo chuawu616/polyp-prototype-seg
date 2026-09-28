@@ -1,0 +1,9 @@
+diff --git a/util/__init__.py b/util/__init__.py
+index 713c826..90f60fd 100644
+--- a/util/__init__.py
++++ b/util/__init__.py
+@@ -1 +1 @@
+-from utils import *
+\ No newline at end of file
++from .utils import *
+\ No newline at end of file

@@ -1,0 +1,11 @@
+# The final version of the DINOv3 specialise script also adds an easy/hard orthogonality loss (0.1);
+# whether every logged DINOv3 specialise run used it is not recorded.
+base: _base_dinov3.yaml
+model:
+  neck: 256
+  head: {type: specialize, num_fg: 4, num_hard: 2, num_bg: 4}
+train:
+  hard_warmup_epochs: 10
+loss:
+  structure: 1.0
+  orth: 0.1

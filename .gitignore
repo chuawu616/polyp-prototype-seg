@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# large files live outside git (see README: Data & weights)
+/data
+weights/*.pth
+checkpoints/*.pth
+runs/
+preds/
+scripts/fetch_from_lab_server.sh
+
+# third-party code fetched by tools/fetch_third_party.py (not redistributable)
+protoseg_polyp/models/third_party/emcad_decoders.py

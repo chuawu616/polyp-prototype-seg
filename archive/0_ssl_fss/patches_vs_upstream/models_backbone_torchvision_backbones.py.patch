@@ -1,0 +1,20 @@
+diff --git a/models/backbone/torchvision_backbones.py b/models/backbone/torchvision_backbones.py
+index 882b0f5..070a71e 100644
+--- a/models/backbone/torchvision_backbones.py
++++ b/models/backbone/torchvision_backbones.py
+@@ -16,11 +16,14 @@ class TVDeeplabRes101Encoder(nn.Module):
+     """
+     def __init__(self, use_coco_init, aux_dim_keep = 64, use_aspp = False):
+         super().__init__()
+-        _model = torchvision.models.segmentation.deeplabv3_resnet101(pretrained=use_coco_init, progress=True, num_classes=21, aux_loss=None)
+         if use_coco_init:
++            weights = torchvision.models.segmentation.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1
+             print("###### NETWORK: Using ms-coco initialization ######")
+         else:
++            weights = None
+             print("###### NETWORK: Training from scratch ######")
++            
++        _model = torchvision.models.segmentation.deeplabv3_resnet101(weights=weights, progress=True, num_classes=21, aux_loss=None)
+ 
+         _model_list = list(_model.children())
+         self.aux_dim_keep = aux_dim_keep

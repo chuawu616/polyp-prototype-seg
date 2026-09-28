@@ -1,0 +1,11 @@
+# All prototype operations on d1, ImageNet initialisation only.
+base: _base_pvt.yaml
+model:
+  head: {type: nonlearnable_v0, num_prototype: 3}
+train:
+  multiscale: [1]
+  save_epochs: [1, 2, 3, 4, 5, 10, 20, 50, 100]
+loss:
+  structure: 1.0
+  ppc: 1.0
+  ppd: {weight: 1.0, legacy_scaled: true}

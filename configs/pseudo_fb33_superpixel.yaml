@@ -1,0 +1,6 @@
+# Sinkhorn on GT-guided SLIC superpixels (tools/precompute_superpixels.py). 30 epochs.
+base: pseudo_fb33.yaml
+data:
+  superpixel_root: data/polyp/TrainDataset/superpixels_gt
+train:
+  epochs: 30

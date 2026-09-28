@@ -1,0 +1,50 @@
+{
+  "__doc__": "\u5be6\u9a57\u7684\u9810\u8a2d\u914d\u7f6e",
+  "batch_size": 4,
+  "device": "cuda",
+  "epochs": 100,
+  "exp_name": "eval_pvtv2_fpn_proto_lr1e-05/checkpoint_epoch_60",
+  "image_size": 352,
+  "log_dir": "./runs_valid",
+  "loss_cfg": {
+    "bce_weight": 0.5,
+    "iou_weight": 0.5
+  },
+  "model_cfg": {
+    "decoder_out_channels": 128,
+    "encoder_weight_path": "./models/pvt_v2_b2.pth",
+    "num_prototypes": 16,
+    "prototype_labels": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "prototype_path": "./global_prototypes_128d.npy"
+  },
+  "num_workers": 4,
+  "optimizer_cfg": {
+    "decoder_lr": 0.0001,
+    "encoder_lr": 0.0001,
+    "prototype_lr": 0.001,
+    "weight_decay": 0.01
+  },
+  "reload_model_path": "./runs/pvtv2_fpn_proto_lr1e-05/1/checkpoint_epoch_60.pth",
+  "seed": 42,
+  "train_image_dir": "/home/U116med/data/polyp/TrainDataset/images/",
+  "train_mask_dir": "/home/U116med/data/polyp/TrainDataset/masks/",
+  "val_image_dir": "/home/U116med/data/polyp/TestDataset/test/images/",
+  "val_mask_dir": "/home/U116med/data/polyp/TestDataset/test/masks/"
+}

@@ -1,0 +1,7 @@
+# Learnable prototypes, 8 FG + 8 BG (author's baseline; best single run, mDice 0.875).
+# Other counts: head.num_fg=K head.num_bg=K
+base: _base_pvt.yaml
+model:
+  head: {type: prototype, num_fg: 8, num_bg: 8}
+loss:
+  structure: 1.0

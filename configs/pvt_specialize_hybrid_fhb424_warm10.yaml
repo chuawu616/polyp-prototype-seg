@@ -1,0 +1,8 @@
+# Hybrid: hard prototypes = global parameters + image-conditioned attention pooling.
+base: _base_pvt.yaml
+model:
+  head: {type: specialize, num_fg: 4, num_hard: 2, num_bg: 4, hybrid: true}
+train:
+  hard_warmup_epochs: 10
+loss:
+  structure: 1.0

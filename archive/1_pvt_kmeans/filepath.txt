@@ -1,0 +1,18 @@
+'train_image_dir': '/home/hughwu/polyp_project/data/polyp/TrainDataset/images',
+        'train_mask_dir': '/home/hughwu/polyp_project/data/polyp/TrainDataset/masks',
+        'sublabel_dir': './polypdata/sublabels_consistent_k8/',
+        'val_image_dir': '/home/hughwu/polyp_project/data/polyp/TestDataset/test/images/',
+        'val_mask_dir': '/home/hughwu/polyp_project/data/polyp/TestDataset/test/masks/',
+
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-300/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-300/masks
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-ClinicDB/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-ClinicDB/masks
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-ColonDB/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/CVC-ColonDB/masks
+/home/hughwu/polyp_project/data/polyp/TestDataset/ETIS-LaribPolypDB/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/ETIS-LaribPolypDB/masks
+/home/hughwu/polyp_project/data/polyp/TestDataset/Kvasir/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/Kvasir/masks
+/home/hughwu/polyp_project/data/polyp/TestDataset/test/images
+/home/hughwu/polyp_project/data/polyp/TestDataset/test/masks
