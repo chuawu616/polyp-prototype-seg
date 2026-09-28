@@ -1,5 +1,7 @@
 # Prototype-based Polyp Segmentation
 
+[![tests](https://github.com/chuawu616/polyp-prototype-seg/actions/workflows/tests.yml/badge.svg)](https://github.com/chuawu616/polyp-prototype-seg/actions/workflows/tests.yml)
+
 **Modelling intra-class variation with sub-class prototypes — a one-year undergraduate research project**
 
 NYCU EE · advisor Prof. 黃俊達 · TA 陳泳翰 · Sep 2025 – Jun 2026
@@ -100,6 +102,7 @@ protoseg_polyp/
 configs/        one YAML per experiment (inherits _base*.yaml)
 tools/          train.py · test.py · analyze_features.py · precompute_superpixels.py · extract_kmeans_centers.py
                 fetch_third_party.py · parse_logs.py · reevaluate_legacy.py · make_tables.py
+tests/          CPU unit tests (models, legacy loading, losses, metrics, data, trainer); run by GitHub Actions
 docs/           journey.md · results.md · results/*.csv · figures/
 archive/        original research code of every stage (not maintained, see archive/README.md)
 ```
@@ -145,7 +148,11 @@ config entry.
 |---|---|
 | Models + evaluation | all 70 original checkpoints load strictly; 66 reproduce their logged per-dataset Dice to < 1e-4 (the other 4 have no log or lost code) |
 | Third-party replacements | official PVTv2 and unmodified EMCAD give bit-identical features to the original code (max abs. difference 0.0) |
-| Training loop | forward / loss / backward of every config and a short CPU run on synthetic data (seeding, validation split, checkpointing); **not yet used to retrain a model end-to-end** |
+| Training loop | unit tests: one optimisation step for every config, EMA-only prototype updates, and a two-epoch CPU run on synthetic images (seeding, validation split, checkpointing, log format); **not yet used to retrain a model on the real data** |
+
+**Tests.** `pip install -r requirements-dev.txt && pytest` runs 42 CPU tests in about 30 s without data or
+weights (DINOv3 tests are skipped unless `PROTOSEG_TEST_DINOV3=1`, as they download the model code); the same suite
+runs on every push via GitHub Actions.
 
 **Evaluation protocol**, naming and every number: [docs/results.md](docs/results.md). The original experiments
 selected checkpoints on the test sets (no validation split), so their numbers are optimistic; `data.val_fraction`

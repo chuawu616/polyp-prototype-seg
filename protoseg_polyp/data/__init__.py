@@ -98,6 +98,7 @@ def get_loader(root, batchsize=16, trainsize=352, augmentation=False, sp_root=No
 
 class TestDataset:
     """Iterates (image tensor (1,3,S,S), gt PIL image at original size, file name)."""
+    __test__ = False  # not a pytest test class
 
     def __init__(self, root, testsize=352, pairs=None):
         if pairs is None:

@@ -36,9 +36,15 @@ def train(model, cfg, out_dir, device=DEVICE):
     """cfg: the full experiment config (see configs/). Writes check.pth, best.pth, epoch_N.pth, train.log."""
     t, d = cfg['train'], cfg['data']
     os.makedirs(out_dir, exist_ok=True)
-    logging.basicConfig(filename=os.path.join(out_dir, 'train.log'), level=logging.INFO, filemode='a',
-                        format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', datefmt='%Y-%m-%d %I:%M:%S %p')
-    logging.info('config: ' + json.dumps(cfg))
+    # a dedicated logger per run (logging.basicConfig is a no-op once logging is configured in the process)
+    log = logging.getLogger(f'protoseg.train.{os.path.abspath(out_dir)}')
+    log.setLevel(logging.INFO)
+    log.propagate = False
+    handler = logging.FileHandler(os.path.join(out_dir, 'train.log'), mode='a')
+    handler.setFormatter(logging.Formatter('[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
+                                           datefmt='%Y-%m-%d %I:%M:%S %p'))
+    log.addHandler(handler)
+    log.info('config: ' + json.dumps(cfg))
 
     if t.get('seed') is not None:
         seed_everything(t['seed'], t.get('deterministic', False))
@@ -51,9 +57,9 @@ def train(model, cfg, out_dir, device=DEVICE):
         train_idx, val_idx = split_train_val(d['train_root'], val_fraction, seed=t.get('seed') or 0)
         images, gts = list_pairs(d['train_root'])
         val_pairs = ([images[i] for i in val_idx], [gts[i] for i in val_idx])
-        logging.info(f'train/val split: {len(train_idx)} / {len(val_idx)} images')
+        log.info(f'train/val split: {len(train_idx)} / {len(val_idx)} images')
     else:
-        logging.info('no validation split: best.pth is selected on the test sets (original protocol)')
+        log.info('no validation split: best.pth is selected on the test sets (original protocol)')
 
     loader = get_loader(d['train_root'], t['batchsize'], t['img_size'], t.get('augmentation', False),
                         d.get('superpixel_root'), indices=train_idx)
@@ -88,7 +94,7 @@ def train(model, cfg, out_dir, device=DEVICE):
                 msg = f'Epoch [{epoch:03d}/{t["epochs"]:03d}], Step [{step:04d}/{len(loader):04d}], ' + \
                       ', '.join(f'{k}: {v:.4f}' for k, v in terms.items())
                 print(msg, flush=True)
-                logging.info(msg)
+                log.info(msg)
 
         torch.save(model.state_dict(), os.path.join(out_dir, 'check.pth'))
         if epoch in t.get('save_epochs', []):
@@ -96,19 +102,21 @@ def train(model, cfg, out_dir, device=DEVICE):
 
         res = evaluate(model, d['test_root'], protocol=select, img_size=t['img_size'], device=device)
         for ds in DATASETS:
-            logging.info(f'epoch: {epoch}, dataset: {ds}, dice: {res[ds]["dice"]}')
-        logging.info(f'mDice: {res["mDice"]}')
+            log.info(f'epoch: {epoch}, dataset: {ds}, dice: {res[ds]["dice"]}')
+        log.info(f'mDice: {res["mDice"]}')
         score, name = res['mDice'], 'test mDice'
         if val_pairs is not None:
             score, name = evaluate_pairs(model, val_pairs, select, t['img_size'], device)['dice'], 'val Dice'
-            logging.info(f'epoch: {epoch}, val dice: {score}')
+            log.info(f'epoch: {epoch}, val dice: {score}')
         print(f'epoch {epoch}: test mDice {res["mDice"]:.4f}' +
               (f' | val Dice {score:.4f}' if val_pairs is not None else ''), flush=True)
         if score > best:
             best = score
             torch.save(model.state_dict(), os.path.join(out_dir, 'best.pth'))
-            logging.info(f'best {name} improved to {best} (epoch {epoch})')
+            log.info(f'best {name} improved to {best} (epoch {epoch})')
 
     if tracker is not None:
         tracker.plot(out_dir)
+    log.removeHandler(handler)
+    handler.close()
     return best
