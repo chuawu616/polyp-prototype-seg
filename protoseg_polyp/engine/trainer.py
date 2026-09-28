@@ -54,7 +54,7 @@ def train(model, cfg, out_dir, device=DEVICE):
     val_fraction = d.get('val_fraction', 0.0)
     train_idx, val_pairs = None, None
     if val_fraction > 0:
-        train_idx, val_idx = split_train_val(d['train_root'], val_fraction, seed=t.get('seed') or 0)
+        train_idx, val_idx = split_train_val(d['train_root'], val_fraction, seed=d.get('val_seed', 0))
         images, gts = list_pairs(d['train_root'])
         val_pairs = ([images[i] for i in val_idx], [gts[i] for i in val_idx])
         log.info(f'train/val split: {len(train_idx)} / {len(val_idx)} images')

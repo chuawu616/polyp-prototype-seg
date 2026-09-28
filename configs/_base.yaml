@@ -5,6 +5,7 @@ data:
   superpixel_root: null
   val_fraction: 0.0     # >0 holds out this share of the training images to select best.pth (recommended: 0.1);
                         # 0 selects on the test sets, as the original research code did
+  val_seed: 0           # seed of the train/val split, kept fixed across training seeds
 train:
   epochs: 100
   lr: 1.0e-4            # AdamW, weight decay 1e-4, constant LR

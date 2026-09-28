@@ -103,7 +103,7 @@ configs/        one YAML per experiment (inherits _base*.yaml)
 tools/          train.py · test.py · analyze_features.py · precompute_superpixels.py · extract_kmeans_centers.py
                 fetch_third_party.py · parse_logs.py · reevaluate_legacy.py · make_tables.py
 tests/          CPU unit tests (models, legacy loading, losses, metrics, data, trainer); run by GitHub Actions
-docs/           journey.md · results.md · results/*.csv · figures/
+docs/           journey.md · results.md · results/*.csv · figures/ · report_zh.md (project report in Chinese, draft)
 archive/        original research code of every stage (not maintained, see archive/README.md)
 ```
 
