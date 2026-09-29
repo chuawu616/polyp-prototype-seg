@@ -18,9 +18,10 @@
   logged per-dataset Dice of one specific epoch to < 1e-4 (column *verified*). The four ✗ rows have no log
   (`fb88 re-run`, DINOv3 `last block, fine-tuned` and `smooth`) or lost code (`uncertainty gate`).
 - **Model selection** used the test sets (inherited from the baseline code; there is no validation split), so all
-  numbers are optimistic and best read as relative comparisons.
-- **Noise level.** The same prototype configuration trained twice (fb88) gave 0.876 and 0.866; two linear heads with
-  slightly different decoders gave 0.876 and 0.872. Differences below ≈ 0.01 are not significant.
+  numbers are optimistic (by ≈ 0.006 mDice, see below) and best read as relative comparisons.
+- **Noise level.** Three seeds of the same configuration have a standard deviation of 0.004–0.007 mDice, and the
+  same prototype configuration trained twice (fb88) gave 0.876 and 0.866. Differences below ≈ 0.01 are not
+  significant.
 
 Raw data: [`results/reevaluation.csv`](results/reevaluation.csv) (unified + original score, matched log/epoch) and
 [`results/experiments_raw.csv`](results/experiments_raw.csv) (every logged run, from `tools/parse_logs.py`).
@@ -65,6 +66,28 @@ Reading the table:
 - A frozen DINOv3 is far behind (ViT-S+/B/L 0.785 / 0.799 / 0.815); fine-tuned, it matches PVTv2 + EMCAD.
 - Non-learnable prototypes are **below** the linear head: V3 ≈ its structure-loss-pretrained initialisation
   (best epoch 2), V0 −2.7, pseudo-label −1.5, pseudo-label + superpixel −2.5 points.
+
+## Seeds and model selection
+
+Follow-up runs (Sep 2026, `scripts/run_followup.sh`): the linear head and learnable prototypes fb88 retrained with
+seeds 0, 1 and 2 on 90 % of the training set. The epoch is selected by Dice on a fixed 10 % validation split (145
+images), and the test sets are used only for reporting. Per-run numbers:
+[`results/followup.md`](results/followup.md) (`tools/summarize_runs.py`).
+
+| Head | seed 0 | seed 1 | seed 2 | **mean ± std** | In-domain | Out-of-domain |
+|---|---|---|---|---|---|---|
+| Linear | 0.865 | 0.857 | 0.863 | **0.862 ± 0.004** | 0.925 ± 0.004 | 0.820 ± 0.004 |
+| Learnable prototype fb88 | 0.861 | 0.871 | 0.858 | **0.863 ± 0.007** | 0.923 ± 0.003 | 0.824 ± 0.009 |
+
+- **No detectable difference between the heads.** The gap is +0.0015 (Welch t-test p = 0.76), and paired by seed it
+  is −0.004, +0.014 and −0.005.
+- **The out-of-domain advantage of the single best fb88 run (0.841 above) does not replicate.** Over three seeds it
+  is +0.004 (p = 0.53).
+- **Optimism of test-set selection.** Picking the best *test* epoch of the same six runs instead gives 0.869 (linear)
+  and 0.868 (fb88), +0.006 on average (0.002–0.010). This is about the level of the table above.
+
+The follow-up also re-ran V0 with the corrected PPD and the pseudo-label teacher at the intended superpixel
+granularity; see [journey.md](journey.md#follow-up-checks-sep-2026-do-the-two-issues-change-the-picture).
 
 ## All re-evaluated checkpoints
 

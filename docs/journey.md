@@ -245,19 +245,30 @@ same bands as the background.*
 Coarser superpixels enlarge the unit of assignment, but Sinkhorn still balances regions *inside* images. To obtain
 sub-classes that differ *between* polyps, the balanced unit would have to be the polyp itself.
 
+The same follow-up retrained the linear head and fb88 with three seeds each. The two heads are indistinguishable
+(0.862 ± 0.004 vs. 0.863 ± 0.007), and test-set epoch selection inflates mDice by ≈ 0.006; see
+[results.md](results.md#seeds-and-model-selection).
+
 **Conclusion.** *Binary supervision only defines the boundary between classes, never the structure
 inside them.* A prototype head — learnable or not, pixel- or superpixel-level — can only partition
 what the feature space already separates. The semantic signal has to come from outside the binary
-labels. Supporting evidence: a labmate using **DINOv3 features** for SLIC + KMeans pseudo-labels with
-full augmentation reached 0.88, while the same pipeline on binary-trained PVTv2 features did not.
-With only 1,450 training images, learning such a self-supervised signal in-house is not feasible, so the
-project concluded here; the natural continuation is to take sub-class structure from self-supervised or foundation-model
-features and let the prototype head refine it.
+labels. Supporting evidence comes from the project's static branch, **DINO-B2M** (Y.-C. Lai, Y.-H. Chen,
+J.-D. Huang, APSIPA ASC 2026). It computes frozen DINOv3 ViT-L features per SLIC superpixel, clusters them with
+k-means over the *whole training set* (3 FG + 2 BG sub-classes) and trains on the resulting soft multi-class labels.
+This raises EMCAD from 0.871 to 0.884 and improves all eight architectures tested, with the largest gains out of
+domain. The two differences from Stage 5 are exactly the two missing pieces: the sub-classes come from
+self-supervised features, and the clustering is global rather than balanced within each batch.
+The natural continuation is to take sub-class structure from self-supervised or foundation-model features, for
+example by initialising the dynamic prototypes from DINO-B2M's centroids, and let the prototype head refine it.
+Two further directions are balancing assignments per polyp rather than per region, and in-domain self-supervised
+pre-training. At the time, 1,450 labelled images seemed too few for the latter, but unlabelled colonoscopy data
+such as HyperKvasir (~100k images) makes it feasible.
 
 ## Lessons learned
 
-- Establish run-to-run variance **before** comparing variants (three seeds of the baseline would have
-  shown that ±0.01 is run-to-run variation and focused the later sweeps).
+- Establish run-to-run variance **before** comparing variants. The three-seed follow-up (std 0.004–0.007) shows
+  that every prototype variant of Stages 2–4 sits inside the linear head's noise band; knowing this in December
+  would have focused the later sweeps.
 - Hold out a validation split instead of selecting checkpoints on the test sets.
 - Instrument first (utilisation curves, per-step collapse, PCA of each decoder node), then design —
   the Stage 5 analysis tooling explained more in two weeks than Stage 4's model changes did in six.

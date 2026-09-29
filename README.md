@@ -14,12 +14,14 @@ NYCU EE · advisor Prof. 黃俊達 · TA 陳泳翰 · Sep 2025 – Jun 2026
   easy/hard specialisation, a DINOv3 backbone, non-learnable prototypes (Sinkhorn assignment + EMA, after ProtoSeg)
   and a prototype pseudo-label teacher with superpixels.
 - **Outcome.** The best prototype head reaches **0.876 mDice**, above EMCAD's published 0.866 and on par with the
-  linear head I re-trained (0.872–0.876). Across runs and variants the prototype heads did not consistently exceed
-  the linear baseline.
+  linear head I re-trained (0.872–0.876). Over three seeds with validation-based model selection the two are
+  indistinguishable (prototype 0.863 ± 0.007 vs. linear 0.862 ± 0.004).
 - **Main finding.** The sub-classes the prototypes discover follow *geometry* — body vs. rim, concentric rings,
   horizontal bands — rather than tissue appearance. Binary masks define the boundary between classes but not the
-  structure inside them, so a prototype head can only partition what the features already separate; a semantic
-  signal from outside the binary labels (e.g. self-supervised features) is the natural next step.
+  structure inside them, so a prototype head can only partition what the features already separate. Fixing the
+  implementation issues found during the refactor does not change this. The project's static branch
+  (DINO-B2M, APSIPA ASC 2026) takes the sub-classes from frozen DINOv3 features instead and improves eight
+  architectures, which is consistent with this diagnosis.
 - **Engineering.** Five research code bases merged into one package; all 70 surviving checkpoints re-evaluated under
   one protocol and matched, epoch by epoch, to their original training logs.
 
@@ -58,7 +60,8 @@ mDice = mean Dice over CVC-ClinicDB, Kvasir, CVC-300, CVC-ColonDB and ETIS (EMCA
 | 5 | Non-learnable V3 | dd4 node, pretrained init | **0.869** | 0.932 | 0.828 | 0.856–0.869 (6) |
 | 5 | Pseudo-label | fb33 | **0.857** | 0.910 | 0.821 | 0.847–0.857 (3) |
 
-† no training log to verify against. Differences below ≈ 0.01 are within run-to-run noise (the same fb88 configuration trained twice: 0.876 and 0.866).
+† no training log to verify against. Checkpoints were selected on the test sets, as in the original code; differences
+below ≈ 0.01 are within run-to-run noise (three seeds: std 0.004–0.007, see [docs/results.md](docs/results.md#seeds-and-model-selection)).
 
 ## The five stages
 
@@ -88,8 +91,10 @@ mDice = mean Dice over CVC-ClinicDB, Kvasir, CVC-300, CVC-ColonDB and ETIS (EMCA
   initialisation that was silently skipped. Follow-up runs with the PPD and superpixel issues corrected changed
   neither the scores beyond run-to-run variation nor the geometric sub-class layout
   ([details](docs/journey.md#follow-up-checks-sep-2026-do-the-two-issues-change-the-picture)).
-- **Careful statistics.** A re-run of the best prototype configuration (fb88: 0.876) reached 0.866, and the linear
-  head reaches 0.872–0.876, so differences below ≈ 0.01 are treated as run-to-run variation rather than method gains.
+- **Careful statistics.** The best prototype head (fb88) and the linear head were each retrained with three seeds,
+  with checkpoints selected on a held-out 10 % validation split. Result: 0.863 ± 0.007 vs. 0.862 ± 0.004 (Welch
+  p = 0.76), and the apparent out-of-domain advantage of fb88 does not hold up (p = 0.53). Selecting the epoch on the
+  test sets, as the original code did, inflates mDice by 0.6 points on average.
 
 ## Repository layout
 
