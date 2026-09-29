@@ -71,11 +71,15 @@ def test_pvt_emcad_feature_nodes():
 
 
 def test_detach_taps_controls_gradient_through_dd4():
-    for detach, expect_grad in ((True, False), (False, True)):
-        enc = PVTEMCAD(detach_taps=detach)
-        enc(torch.randn(1, 3, 64, 64))['dd4'].sum().backward() if not detach else None
-        g = enc.backbone.patch_embed1.proj.weight.grad
-        assert (g is not None and g.abs().sum() > 0) == expect_grad
+    for detach in (True, False):
+        dd4 = PVTEMCAD(detach_taps=detach)(torch.randn(1, 3, 64, 64))['dd4']
+        assert dd4.requires_grad != detach
+    # not dd4.sum(): dd4 leaves a freshly initialised LayerNorm, whose channel sum is constant, so that gradient
+    # is only rounding noise (exactly 0 on some CPUs)
+    enc = PVTEMCAD(detach_taps=False)
+    dd4 = enc(torch.randn(1, 3, 64, 64))['dd4']
+    (dd4 * torch.randn_like(dd4)).sum().backward()
+    assert enc.backbone.patch_embed1.proj.weight.grad.abs().sum() > 0
 
 
 @pytest.mark.skipif(not RUN_DINOV3, reason='set PROTOSEG_TEST_DINOV3=1 (downloads DINOv3 code via torch.hub)')
