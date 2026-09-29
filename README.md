@@ -85,7 +85,9 @@ mDice = mean Dice over CVC-ClinicDB, Kvasir, CVC-300, CVC-ColonDB and ETIS (EMCA
 - **Issues identified during re-implementation**, documented in [journey.md](docs/journey.md#diagnosis-why-the-sub-classes-stayed-geometric):
   a temperature-scaling mismatch in the PPD loss, a test-time decision rule that differed from training,
   superpixels 16× finer than intended, an inactive edge weighting in the inherited structure loss, and a KMeans
-  initialisation that was silently skipped.
+  initialisation that was silently skipped. Follow-up runs with the PPD and superpixel issues corrected changed
+  neither the scores beyond run-to-run variation nor the geometric sub-class layout
+  ([details](docs/journey.md#follow-up-checks-sep-2026-do-the-two-issues-change-the-picture)).
 - **Careful statistics.** A re-run of the best prototype configuration (fb88: 0.876) reached 0.866, and the linear
   head reaches 0.872–0.876, so differences below ≈ 0.01 are treated as run-to-run variation rather than method gains.
 
@@ -100,8 +102,10 @@ protoseg_polyp/
   data/         PraNet-split datasets, optional superpixel maps, train/val split
   ops.py        Sinkhorn-Knopp, EMA
 configs/        one YAML per experiment (inherits _base*.yaml)
-tools/          train.py · test.py · analyze_features.py · precompute_superpixels.py · extract_kmeans_centers.py
-                fetch_third_party.py · parse_logs.py · reevaluate_legacy.py · make_tables.py
+tools/          train.py · test.py · analyze_features.py · analyze_subclass_layout.py · precompute_superpixels.py
+                extract_kmeans_centers.py · fetch_third_party.py · parse_logs.py · reevaluate_legacy.py · make_tables.py
+                summarize_runs.py
+scripts/        run_followup.sh (follow-up experiments: PPD / superpixel checks, seeds)
 tests/          CPU unit tests (models, legacy loading, losses, metrics, data, trainer); run by GitHub Actions
 docs/           journey.md · results.md · results/*.csv · figures/ · report_zh.md (project report in Chinese, draft)
 archive/        original research code of every stage (not maintained, see archive/README.md)
@@ -133,6 +137,9 @@ python tools/train.py configs/pseudo_fb33.yaml --out runs/pseudo_fb33 --set data
 # sub-class maps + PCA of every feature node, best/worst cases or across epochs
 python tools/analyze_features.py configs/pseudo_fb33.yaml checkpoints/pseudo_fb33.pth --worst 8 --out figs/worst.jpg
 
+# where the FG sub-classes sit (depth to the rim, height / width in the polyp, link to size and dataset)
+python tools/analyze_subclass_layout.py --run "Pseudo" configs/pseudo_fb33.yaml checkpoints/pseudo_fb33.pth --out figs/layout.md
+
 # inputs for the Stage-5 variants
 python tools/precompute_superpixels.py --train_root data/polyp/TrainDataset
 python tools/extract_kmeans_centers.py configs/pvt_linear.yaml checkpoints/pvt_linear.pth --node dd4 --out assets/kmeans/dd4_ch512_m5.pth
@@ -148,9 +155,9 @@ config entry.
 |---|---|
 | Models + evaluation | all 70 original checkpoints load strictly; 66 reproduce their logged per-dataset Dice to < 1e-4 (the other 4 have no log or lost code) |
 | Third-party replacements | official PVTv2 and unmodified EMCAD give bit-identical features to the original code (max abs. difference 0.0) |
-| Training loop | unit tests: one optimisation step for every config, EMA-only prototype updates, and a two-epoch CPU run on synthetic images (seeding, validation split, checkpointing, log format); **not yet used to retrain a model on the real data** |
+| Training loop | unit tests: one optimisation step for every config, EMA-only prototype updates, and a two-epoch CPU run on synthetic images (seeding, validation split, checkpointing, log format); used for the follow-up runs on the real data (`scripts/run_followup.sh`, Sep 2026) |
 
-**Tests.** `pip install -r requirements-dev.txt && pytest` runs 42 CPU tests in about 30 s without data or
+**Tests.** `pip install -r requirements-dev.txt && pytest` runs 44 CPU tests in about 30 s without data or
 weights (DINOv3 tests are skipped unless `PROTOSEG_TEST_DINOV3=1`, as they download the model code); the same suite
 runs on every push via GitHub Actions.
 

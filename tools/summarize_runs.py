@@ -60,8 +60,9 @@ def main():
                      f" | {r['in_domain']:.4f} | {r['out_domain']:.4f} | **{r['mDice']:.4f}** | {'yes' if r['done'] else 'no'} |")
     groups = defaultdict(list)
     for name, r in runs.items():
-        groups[re.sub(r'_s\d+$', '', name)].append(r)
-    lines += ['', '| group | n | val Dice | in-domain | out-of-domain | **test mDice** |', '|---|---|---|---|---|---|']
+        if r['done']:                                    # unfinished runs are listed above but not aggregated
+            groups[re.sub(r'_s\d+$', '', name)].append(r)
+    lines += ['', 'Groups aggregate finished runs only.', '', '| group | n | val Dice | in-domain | out-of-domain | **test mDice** |', '|---|---|---|---|---|---|']
     for g, rs in groups.items():
         def ms(k):
             v = np.array([r[k] for r in rs])

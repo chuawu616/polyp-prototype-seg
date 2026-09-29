@@ -202,14 +202,48 @@ the PCA of dd4 / x4: Sinkhorn found position, the only variation the binary-trai
    of 10 for PPC, and the same scaled logits were fed to PPD, `(1 − 10·cos)²`. Its minimum is at
    cos = 0.1, so PPD pulled every pixel *away* from its assigned prototype, fighting PPC. ProtoSeg and
    V2 apply PPD to the raw cosine. The V0/V3 evidence is therefore confounded; the Pseudo-label
-   variant (no PPD) reaches the same geometric decomposition, so the conclusion below still stands,
-   but V0 with a correct PPD was never run. `losses.ppd(legacy_scaled=True)` reproduces the old behaviour.
+   variant (no PPD) reaches the same geometric decomposition, so the conclusion below still stands.
+   `losses.ppd(legacy_scaled=True)` reproduces the old behaviour; V0 with the corrected PPD was re-run in the
+   follow-up checks below.
 6. **Superpixels were 16× finer than intended (found during re-implementation).** The superpixel count was meant as
    area / 50 *at d1 resolution* (the script's own help text: "2–120 FG superpixels"), but SLIC ran at 352×352, so
    an image has ≈2,400 superpixels — still ≈2,430 distinct ids after downsampling to d1 (88×88 = 7,744 pixels), i.e.
    ≈3 d1 pixels each. The "superpixel-level" Sinkhorn was therefore close to pixel-level. It still removed the
-   salt-and-pepper noise, but assignment at the intended granularity (`--pixels_per_sp 800` at 352 ≈ 50 d1
-   pixels) was never tested.
+   salt-and-pepper noise; assignment at the intended granularity (`--pixels_per_sp 800` at 352 ≈ 50 d1
+   pixels) was tested in the follow-up checks below.
+
+### Follow-up checks (Sep 2026): do the two issues change the picture?
+
+Four runs with `scripts/run_followup.sh`, each trained once and with the checkpoint selected on a 10 % validation
+split. The layout statistics come from `tools/analyze_subclass_layout.py`, which uses the argmax of prototype
+similarity over the FG channels on all 798 test images; all numbers are in
+[results/subclass_layout.md](results/subclass_layout.md).
+
+| Run | mDice | In-domain | Out-of-domain | FG sub-class layout |
+|---|---|---|---|---|
+| V0, original PPD | 0.844 | 0.916 | 0.797 | sectors by direction (large polyps: top / lower-left / lower-right) |
+| V0, corrected PPD | 0.851 | 0.905 | 0.816 | **concentric rings**: median depth 0.17 / 0.45 / 0.52 (0 = rim, 1 = centre) |
+| Pseudo + superpixel, 50 px (original) | 0.847 | 0.909 | 0.806 | horizontal bands |
+| Pseudo + superpixel, 800 px (intended) | 0.842 | 0.908 | 0.798 | horizontal bands |
+
+- **Scores.** Both fixes stay within run-to-run variation (+0.007 and −0.005), and both variants remain below the
+  linear head.
+- **Layout.** The partition still follows position:
+  - With the corrected PPD, V0 draws rings.
+  - The pseudo-label teacher looks image-level at first: in 67–72 % of test images, one FG sub-class takes more than
+    90 % of the polyp (6–8 % for V0). But in the 111 large polyps (> 15 % of the image), the three FG sub-classes are
+    ordered by height (median relative height 0.34 / 0.43 / 0.76) and all sit at the same width (≈ 0.5). The polyp is
+    cut into the same horizontal bands as the background, and a small polyp simply falls into one band.
+  - As a result, the winning sub-class tracks polyp size (Kruskal–Wallis p < 1e-15; median area 24 % vs. 3.5 % of
+    the image) and not the source dataset (NMI ≤ 0.04).
+
+![Follow-up sub-class maps](figures/followup_subclass_maps.jpg)
+*Follow-up runs on a small, a medium and a large test polyp (validation-selected checkpoints). The PPD fix turns
+sectors into rings, and coarser superpixels do not change the horizontal bands; a large polyp is split into the
+same bands as the background.*
+
+Coarser superpixels enlarge the unit of assignment, but Sinkhorn still balances regions *inside* images. To obtain
+sub-classes that differ *between* polyps, the balanced unit would have to be the polyp itself.
 
 **Conclusion.** *Binary supervision only defines the boundary between classes, never the structure
 inside them.* A prototype head — learnable or not, pixel- or superpixel-level — can only partition
